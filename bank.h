@@ -2,14 +2,16 @@
 #define BANK_H_
 
 #include <vector>
+#include <stdlib.h>
+#include <string.h>
 #include "Account.h"
 #include "atm.h"
 
-class bank {
+class Bank {
 	private:
 	
-	vector<Account> accounts_;
-	vector<atm> atms_;
+	vector<Account> accs_;
+	vector<pthread_t*> atms_;
 	Account bank_;
 	int atm_num_;
 	int atm_run;
@@ -17,10 +19,12 @@ class bank {
 	bool done;
 	pthread_t* cut_thread;
 	pthread_t* pnt_thread;
+	char* files_[];
 	
 	public:
 	
-	bank(int atm_num, char* atm_files[]);
+	Bank(int atm_num, char* atm_files[]);
+	~Bank();
 	
 	int getAtmNum();
 	int getAccNum();
@@ -32,9 +36,9 @@ class bank {
 	pthread_t* getCutThread();
 	pthread_t* getPntThread();
 	
-	void* startAtm(int i); // How do I pass the accounts vector back and forth?
+	void startAtm(int i);
 	
-	void* takeCut();
+	void takeCut();
 	
 	void printStatus();
 };

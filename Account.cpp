@@ -110,7 +110,7 @@ int Account::deductComission(double percentage)
 	LOCK(&WRITELOCK);
 	int commission = (int)round(((double)BALANCE)*(percentage/100));
 	BALANCE -= commission;
-	sleep(1);
+	//sleep(1);
 	UNLOCK(&WRITELOCK);
 	return commission;
 }

@@ -47,6 +47,7 @@ public:
 	void withdraw(int ATM, char* PassReceived, int sum);
 	void deposit(int ATM, char* PassReceived, int sum);
 	void Transfer(Account& DestAccount,int SourceAccountIndex, int DestAccountIndex, char* PassReceived, int ATM, int sum);//transfers money.
+	void printStatus() const; //Implement needed! Print status according to convention 
 };
 
 
