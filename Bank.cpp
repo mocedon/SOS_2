@@ -44,15 +44,15 @@ void* CommissionThreadCut(void* arg)
 		UNLOCK(&bank->VecREADMUTEX);
 		double tmprand=(double)(rand() % 100);
 		double percentage = (tmprand / 50) + RANDMAX;
-		for (int i=0, int CMSN=0;i<bank->AccountsVector.size();i++)
+		for (int i=0, CMSN=0;i<bank->AccountsVector.size();i++)
 		{
 			Account &currentAcc = const_cast<Account&>(bank->AccountsVector[i]);
-			int CMSN = bank->AccountsVector[i].deductCommission(percentage);
+			CMSN = bank->AccountsVector[i].deductCommission(percentage);
 			LOCK(&bank->BANKACCOUNTMUTEX);
 			bank->BANKBALANCE =bank->BANKBALANCE+ CMSN;
 			UNLOCK(&bank->BANKACCOUNTMUTEX);
 			LOCK(&logMutex);
-			fprintf(logtxt, "Bank: commissions of %f %% were charged, the bank gained %d $ from account %d\n",percentage,commission,bank->AccountsVector[i].getId());
+			fprintf(logtxt, "Bank: commissions of %f %% were charged, the bank gained %d $ from account %d\n",percentage,CMSN,bank->AccountsVector[i].getId());
 			UNLOCK(&logMutex);
 		}
 		
