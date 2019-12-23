@@ -27,11 +27,11 @@ Account::~Account()
 	mutex_destroy(&READMUTEX);
 }
 
-int Account::getId() const
-{
-	return ID;
-}
 
+int Account::getReadCount() const
+{
+	return READCOUNTER;
+}
 string Account::getPassword() const
 {
 	return PASSWORD;
@@ -42,16 +42,16 @@ int Account::getBalance() const
 	return BALANCE;
 }
 
-int Account::getReadCount() const
-{
-	return READCOUNTER;
-}
 
+int Account::getId() const
+{
+	return ID;
+}
 void Account::deposit(int ATM, string PassReceived, int sum) {
 	if (IdenticalPassword(ATM, PassReceived))
 	{
 		lock(&WRITEMUTEX);
-		BALANCE += sum;
+		BALANCE =BALANCE+ sum;
 		lock(&logMutex);
 		fprintf(logtxt, "%d: Account %d new balance is %d after %d $ was deposited\n",ATM,ID,BALANCE,sum);
 		unlock(&logMutex);
@@ -64,17 +64,17 @@ void Account::withdraw(int ATM, string PassReceived, int sum) {
 	if (IdenticalPassword(ATM, PassReceived))
 	{
 		lock(&WRITEMUTEX);
-		if (sum > BALANCE) // we want to withdraw more money than we have in the account
-		{
-			lock(&logMutex);
-			fprintf(logtxt, "Error %d: Your transaction failed - account id %d balance is lower than %d\n",ATM,ID,sum);
-			unlock(&logMutex);
-		}
-		else
+		if (sum <= BALANCE)
 		{
 			BALANCE -= sum;
 			lock(&logMutex);
 			fprintf(logtxt, "%d: Account %d new balance is %d after %d $ was withdrew\n",ATM,ID,BALANCE,sum);
+			unlock(&logMutex);
+		}
+		else // we want to withdraw more money than we have in the account
+		{
+			lock(&logMutex);
+			fprintf(logtxt, "Error %d: Your transaction failed - account id %d balance is lower than %d\n",ATM,ID,sum);
 			unlock(&logMutex);
 		}
 		sleep(1);
@@ -84,8 +84,10 @@ void Account::withdraw(int ATM, string PassReceived, int sum) {
 
 
 void Account::getBalance(int ATM, string PassReceived) {
-	if (IdenticalPassword(ATM, PassReceived))
-	{
+		if (!IdenticalPassword(ATM, PassReceived))
+		{
+		return;
+		}
 		lock(&READMUTEX);
 		READCOUNTER++;
 		if (READCOUNTER == 1) // someone wants to read the value, so we need to lock the write lock
@@ -95,77 +97,78 @@ void Account::getBalance(int ATM, string PassReceived) {
 		fprintf(logtxt, "%d: Account %d balance is %d\n",ATM,ID,BALANCE);
 		unlock(&logMutex);
 		lock(&READMUTEX);
-		READCOUNTER--;
-		if (READCOUNTER == 0) // no one wants to read the value, so we can unlock the write lock
+		--READCOUNTER;
+		if (!READCOUNTER) // no one wants to read the value, so we can unlock the write lock
 			unlock(&WRITEMUTEX);
 		sleep(1);
 		unlock(&READMUTEX);
-	}
 }
 
 
 void Account::Transfer(int srcAccount, int receiverAccountIndex, Account& receiverAccount, string PassReceived, int ATM, int sum) {
-	if (IdenticalPassword(ATM, PassReceived))
-	{
-		// lock the write lock of both accounts, ,sender and receiver, in particular order to avoid deadlock
-		if (srcAccount < receiverAccountIndex)
+		if (!IdenticalPassword(ATM, PassReceived))
 		{
-			lock(&WRITEMUTEX);
+		return;
+		}
+		// lock the write lock of both accounts, ,sender and receiver, in particular order to avoid deadlock
+		if (srcAccount >= receiverAccountIndex)
+		{
 			lock(&receiverAccount.WRITEMUTEX);
+			lock(&WRITEMUTEX);
 		}
 		else
 		{
-			lock(&receiverAccount.WRITEMUTEX);
 			lock(&WRITEMUTEX);
+			lock(&receiverAccount.WRITEMUTEX);
 		}
-
-		if (sum < BALANCE) // we want to transfer more money than we have in the account
+		if (sum>=BALANCE)
+		{
+			BALANCE = BALANCE-sum;
+			receiverAccount.BALANCE =receiverAccount.BALANCE+ sum;
+			lock(&logMutex);
+			fprintf(logtxt, "%d: Transfer %d from account %d to account %d new account balance is %d new target account balance is %d\n",ATM,sum,ID,receiverAccount.ID,BALANCE,receiverAccount.BALANCE);
+			unlock(&logMutex);
+		}
+		else // we want to transfer more money than we have in the account
 		{
 			lock(&logMutex);
 			fprintf(logtxt, "Error %d: Your transaction failed - account id %d balance is lower than %d\n",ATM,ID,sum);
 			unlock(&logMutex);
 		}
-		else
-		{
-			BALANCE = BALANCE-sum;
-			receiverAccount.BALANCE += sum;
-			lock(&logMutex);
-			fprintf(logtxt, "%d: Transfer %d from account %d to account %d new account balance is %d new target account balance is %d\n",ATM,sum,ID,receiverAccount.ID,BALANCE,receiverAccount.BALANCE);
-			unlock(&logMutex);
-		}
+
 		sleep(1);
 		// unlock the write lock of both accounts, sender and receiver
-		if (srcAccount < receiverAccountIndex)
+		if (srcAccount >= receiverAccountIndex)
 		{
-			unlock(&receiverAccount.WRITEMUTEX);
 			unlock(&WRITEMUTEX);
+			unlock(&receiverAccount.WRITEMUTEX);
 		}
 		else
 		{
-			unlock(&WRITEMUTEX);
 			unlock(&receiverAccount.WRITEMUTEX);
+			unlock(&WRITEMUTEX);
 		}
-	}
 }
 
 
 bool Account::IdenticalPassword(int ATM, string PassReceived)
 {
-	if (PassReceived == PASSWORD)
-		return true;
+	if (PassReceived != PASSWORD)
+	{
 	lock(&logMutex);
 	fprintf(logtxt, "Error %d: Your transaction failed - password password for account id %d is incorrect\n",ATM,ID);
 	unlock(&logMutex);
 	return false;
+	}
+	return true;
 }
 
 
 int Account::deductCommission(double percentage) 
 {
 	lock(&WRITEMUTEX);
-	int commission = (int)round(((double)BALANCE)*(percentage/100));
-	BALANCE -= commission;
+	BALANCE = BALANCE-(int)round(((double)BALANCE)*(percentage/100));//deducting the comission
 	sleep(1);
 	unlock(&WRITEMUTEX);
-	return commission;
+	return (int)round(((double)BALANCE)*(percentage/100));
 }

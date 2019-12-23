@@ -29,7 +29,6 @@ public:
 	Account(int id, string password, int balance);
 	Account(const Account& account); //copy constructor
 
-	// get functions
 	int getId() const;
 	string getPassword() const;
 	int getReadCount() const;
@@ -39,7 +38,6 @@ public:
 	void getBalance(int ATM, string PassReceived);
 	void Transfer(int srcAccount, int destAccountIdx, Account& destAccount, string PassReceived, int ATM, int sum);
 
-	// helper func
 	bool IdenticalPassword(int ATM, string PassReceived);
 	int deductCommission(double percentage);
 	~Account();

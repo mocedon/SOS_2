@@ -20,25 +20,23 @@ public:
 class Bank
 {
 public:
-	vector<Account> AccountsVector;
-	int BANKBALANCE;
 	MUTEX VecWRITEMUTEX;
-	MUTEX VecREADMUTEX;
-	int VecREADCOUNTER;
+	int VecREADCOUNTER=0;
 	MUTEX BANKACCOUNTMUTEX;
+	int BANKBALANCE=0;
+	vector<Account> AccountsVector;
+	MUTEX VecREADMUTEX;
 
 	Bank();//constructor
-	~Bank();
-	void addAccount(int ATM, int ACCOUNTID, string PassReceived, int ReceivedBalance);
-	void deposit(int ATM, int ACCOUNTID, string PassReceived, int sum);
-	void withdraw(int ATM, int ACCOUNTID, string PassReceived, int sum);
-	void getBalance(int ATM, int ACCOUNTID, string PassReceived);
-	void Transfer(int ATM, int ACCOUNTID, string PassReceived, int receiverAccountID, int sum);
-
-
+	~Bank(); //destructor
 	Account* LocateAccount(int id);
 	int getDistFromBeginning(Account*);
 	int findbyID(int id);
+	void getBalance(int ATM, int ACCOUNTID, string PassReceived);
+	void newAccount(int ATM, int ACCOUNTID, string PassReceived, int ReceivedBalance);
+	void deposit(int ATM, int ACCOUNTID, string PassReceived, int sum);
+	void Transfer(int ATM, int ACCOUNTID, string PassReceived, int receiverAccountID, int sum);
+	void withdraw(int ATM, int ACCOUNTID, string PassReceived, int sum);
 };
 
 void* CommissionThreadCut(void* arg);
