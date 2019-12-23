@@ -123,8 +123,8 @@ void* CommissionThreadCut(void* arg)
 			LOCK(&bank->VecWRITEMUTEX);
 		}
 		UNLOCK(&bank->VecREADMUTEX);
-		double tmprand=(double)(rand() % 101);
-		double percentage = ((tmprand / 50) + RAND_MAX; //get a random number between 2-4
+		double tmprand=(double)(rand() % 100);
+		double percentage = (tmprand / 50) + RAND_MAX; //get a random number between 2-4
 		int commission = 0;
 		for (int i=0;i<bank->AccountsVector.size();i++)
 		{
