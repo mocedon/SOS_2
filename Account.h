@@ -1,53 +1,48 @@
-#ifndef ACCOUNT_H_
-#define ACCOUNT_H_
-
+#ifndef ACCOUNTS_H_
+#define ACCOUNTS_H_
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <cmath>
 #include <iostream>
-#include <fstream>
-#include <unistd.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <char*.h>
-#include <sys/stat.h>
-#include <stdbool.h>
-#include <cmath>
-#include <vector>
+#include <string>
+#include <pthread.h>
 
-typedef pthread_mutex_t MUTEX;
-extern MUTEX lock_log; //should be first intiated as global in Bank.cpp
-extern ofstream logtxt; //should be first initiated as global in Bank.cpp
 using namespace std;
+typedef pthread_mutex_t MUTEX;
+extern MUTEX logMutex;
+extern FILE* logtxt;
 
 class Account {
+
 private:
-// mutex:
-	MUTEX READLOCK;
-	int READCOUNTER=0; // C++11 new feature, initializing here is possible
-// properties of Account:
-	int BALANCE;
 	int ID;
-	char* PASSWORD;
+	string PASSWORD;
+	int BALANCE;
+	MUTEX READMUTEX;
+	int READCOUNTER=0;
 
 public:
-	MUTEX WRITELOCK; //public WriteLock.
+	MUTEX WRITEMUTEX;
 
+	Account(int id, string password, int balance);
 	Account(const Account& account); //copy constructor
-	Account(int id, char* password, int balance);
-	
-	int getBalance() const; //getter of balance.
-	void getBalance(int ATM, char* PassReceived); //overloading the first function, this one requires password and ATM id.
-	int getReadCount() const; //getter of Readers' counter.
-	int getId() const; //getter of ID
-	char* getPassword() const; //getter of Password.
 
-	int IdenticalPassword(char* PassReceived,int ATM); //checks if the password of account is same as Password received and returns 0 or 1 accordingly. otherwise adds to logtxt error with ATM id.
-	int deductComission(double percentage); //locks Writelock and deducts a commision(according to percentage) from the account's 'BALANCE' property.
-	//account actions:
-	void withdraw(int ATM, char* PassReceived, int sum);
-	void deposit(int ATM, char* PassReceived, int sum);
-	void Transfer(Account& DestAccount,int SourceAccountIndex, int DestAccountIndex, char* PassReceived, int ATM, int sum);//transfers money.
-	void printStatus() const; //Implement needed! Print status according to convention 
+	// get functions
+	int getId() const;
+	string getPassword() const;
+	int getReadCount() const;
+	void deposit(int ATM, string PassReceived, int sum);
+	void withdraw(int ATM, string PassReceived, int sum);
+	int getBalance() const;
+	void getBalance(int ATM, string PassReceived);
+	void Transfer(int srcAccount, int destAccountIdx, Account& destAccount, string PassReceived, int ATM, int sum);
+
+	// helper func
+	bool IdenticalPassword(int ATM, string PassReceived);
+	int deductCommission(double percentage);
+	~Account();
 };
 
 
