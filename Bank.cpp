@@ -16,14 +16,14 @@ const auto& MUTEX_INIT = pthread_mutex_init;
 const auto& LOCK = pthread_mutex_lock;
 const auto& UNLOCK = pthread_mutex_unlock;
 const auto& MUTEX_DESTROY= pthread_mutex_destroy;
-Bank::Bank()
+Bank::Bank() // this is the bank constructor
 {
 	AccountsVector = vector<Account>();
 	MUTEX_INIT(&VecWRITEMUTEX, NULL);
 	MUTEX_INIT(&VecREADMUTEX, NULL);
 	MUTEX_INIT(&BANKACCOUNTMUTEX, NULL);
 }
-Bank::~Bank()
+Bank::~Bank() // this is the bank destructor including the mutex_destroy calls.
 {
 	MUTEX_DESTROY(&VecWRITEMUTEX);
 	MUTEX_DESTROY(&VecREADMUTEX);
@@ -32,7 +32,7 @@ Bank::~Bank()
 void* CommissionThreadCut(void* arg)
 {
 	LOCK(&finishedMutex);
-	while (ATMsLeft)
+	while (ATMsLeft) // while there are ATMS still left. namely ATMSLeft is greater than zero.
 	{
 		UNLOCK(&finishedMutex);
 		LOCK(&bank->VecREADMUTEX);
@@ -44,13 +44,12 @@ void* CommissionThreadCut(void* arg)
 		UNLOCK(&bank->VecREADMUTEX);
 		double tmprand=(double)(rand() % 100);
 		double percentage = (tmprand / 50) + RANDMAX;
-		int commission = 0;
-		for (int i=0;i<bank->AccountsVector.size();i++)
+		for (int i=0, int CMSN=0;i<bank->AccountsVector.size();i++)
 		{
 			Account &currentAcc = const_cast<Account&>(bank->AccountsVector[i]);
-			int commission = bank->AccountsVector[i].deductCommission(percentage);
+			int CMSN = bank->AccountsVector[i].deductCommission(percentage);
 			LOCK(&bank->BANKACCOUNTMUTEX);
-			bank->BANKBALANCE =bank->BANKBALANCE+ commission;
+			bank->BANKBALANCE =bank->BANKBALANCE+ CMSN;
 			UNLOCK(&bank->BANKACCOUNTMUTEX);
 			LOCK(&logMutex);
 			fprintf(logtxt, "Bank: commissions of %f %% were charged, the bank gained %d $ from account %d\n",percentage,commission,bank->AccountsVector[i].getId());
@@ -211,9 +210,10 @@ void Bank::Transfer(int ATM, int desiredAccountID, string PassReceived, int rece
 		int srcAccount = getDistFromBeginning(desiredAccount);
 		Account* receiverAccount = LocateAccount(receiverAccountID);
 		int receiverAccountIndex = getDistFromBeginning(receiverAccount);
-		if (desiredAccount != NULL && receiverAccount != NULL)
+		if (receiverAccount != NULL)
 		{
-			desiredAccount->Transfer(srcAccount, receiverAccountIndex, (*receiverAccount), PassReceived, ATM, sum);
+			if (desiredAccount != NULL)
+				desiredAccount->Transfer(srcAccount, receiverAccountIndex, (*receiverAccount), PassReceived, ATM, sum);
 		}
 	}
 	
@@ -344,9 +344,6 @@ Account* Bank::LocateAccount(int id)
 	}
 	return NULL;
 }
-
-
-
 
 int main(int argc, char *argv[])
 {
