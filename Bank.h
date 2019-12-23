@@ -41,7 +41,7 @@ public:
 	int findbyID(int id);
 };
 
-void* DeductComissionThread(void* arg);
-void* BankPrintThread(void* arg);
+void* CommissionThreadCut(void* arg);
+void* threadPnt(void* arg);
 
 #endif

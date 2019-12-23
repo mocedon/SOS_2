@@ -1,5 +1,11 @@
 #include "Bank.h"
 #define MAXCMD 10
+
+
+#define PASSWORD "password"
+#define RAND_MAX 2
+#define THREAD_SUCCESS(x) if (!x) return -1;
+	
 //global locks
 MUTEX logMutex;
 MUTEX finishedMutex;
@@ -19,9 +25,9 @@ Bank::Bank()
 	AccountsVector = vector<Account>();
 	BANKBALANCE = 0;
 	MUTEX_INIT(&VecWRITEMUTEX, NULL);
-	pthread_mutex_init(&VecREADMUTEX, NULL);
+	MUTEX_INIT(&VecREADMUTEX, NULL);
 	VecREADCOUNTER = 0;
-	pthread_mutex_init(&BANKACCOUNTMUTEX, NULL);
+	MUTEX_INIT(&BANKACCOUNTMUTEX, NULL);
 }
 Bank::~Bank()
 {
@@ -30,7 +36,7 @@ Bank::~Bank()
 	MUTEX_DESTROY(&BANKACCOUNTMUTEX);
 }
 
-void* atmThreadFunc(void* data)
+void* threadAtm(void* data)
 {
 	ATMInfo ATMInfo_t = *(ATMInfo*)data; // struct to hold the ATM data
 	
@@ -102,7 +108,7 @@ void* atmThreadFunc(void* data)
 }
 
 
-void* DeductComissionThread(void* arg)
+void* CommissionThreadCut(void* arg)
 {
 	LOCK(&finishedMutex);
 	while (ATMsLeft)
@@ -117,8 +123,8 @@ void* DeductComissionThread(void* arg)
 			LOCK(&bank->VecWRITEMUTEX);
 		}
 		UNLOCK(&bank->VecREADMUTEX);
-
-		double percentage = ((double)(rand() % 101) / 50) + 2; //get a random number between 2-4
+		double tmprand=(double)(rand() % 101);
+		double percentage = ((tmprand / 50) + RAND_MAX; //get a random number between 2-4
 		int commission = 0;
 		for (int i=0;i<bank->AccountsVector.size();i++)
 		{
@@ -146,7 +152,7 @@ void* DeductComissionThread(void* arg)
 }
 
 
-void* BankPrintThread(void* arg)
+void* threadPnt(void* arg)
 {
 	LOCK(&finishedMutex);
 	while (ATMsLeft)
@@ -406,10 +412,10 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	pthread_mutex_init(&finishedMutex, NULL);
+	MUTEX_INIT(&finishedMutex, NULL);
 
 	// Execute input file
-	pthread_mutex_init(&logMutex, NULL);
+	MUTEX_INIT(&logMutex, NULL);
 	logtxt = fopen("log.txt", "w+");
 	pthread_t* atms = new pthread_t[TotalATMs];
 	ATMInfo* ATMInfoArr = new ATMInfo[TotalATMs]; 
@@ -418,54 +424,63 @@ int main(int argc, char *argv[])
 	pthread_t commission;
 	pthread_t print;
 	int i;
+	int ts;
 	for (i = 0; i < TotalATMs; i++)
 	{
 		(ATMInfoArr[i]).ID = i + 1;
 		strcpy((ATMInfoArr[i]).CMDSfile, argv[i + 2]);
-		if (pthread_create(&atms[i], NULL, atmThreadFunc, (void*)&ATMInfoArr[i]))
+		if (ts=pthread_create(&atms[i], NULL, threadAtm, (void*)&ATMInfoArr[i]))
 			{
 				fprintf(stderr,"error: could not run pthread_create\n");
+				THREAD_SUCCESS(ts);
 				return -1;
 			}
 	}
 
-	if (pthread_create(&commission, NULL, DeductComissionThread, NULL)) //Create the commission thread
+	if (ts=pthread_create(&commission, NULL, CommissionThreadCut, NULL)) //Create the commission thread
 	{
 		fprintf(stderr,"error: could not run pthread_create\n");
+		THREAD_SUCCESS(ts);
 		return -1;
 	}
 
-	if (pthread_create(&print, NULL, BankPrintThread, NULL)) //Create the print thread
+	if (ts=pthread_create(&print, NULL, threadPnt, NULL)) //Create the print thread
 	{
 		fprintf(stderr,"error: could not run pthread_create\n");
+		THREAD_SUCCESS(ts);
 		return -1;
 	}
 
 	// Wait for all threads to finish
 	for (i = 0; i < TotalATMs; i++)
 	{
-		if (pthread_join(atms[i], NULL))
+		if (ts=pthread_join(atms[i], NULL))
 		{
 			fprintf(stderr,"error: could not run pthread_join\n");
+			THREAD_SUCCESS(ts);
 			return -1;
 		}
 	}
 	
-	if (pthread_join(commission, NULL))
+	if (ts=pthread_join(commission, NULL))
 	{
 		fprintf(stderr,"error: could not run pthread_join\n");
+		THREAD_SUCCESS(ts);
 		return -1;
 	}
 
-	if (pthread_join(print, NULL))
+	if (ts=pthread_join(print, NULL))
 	{
 		fprintf(stderr,"error: could not run pthread_join\n");
+		THREAD_SUCCESS(ts);
 		return -1;
 	}
 
-	if(fclose(logtxt)==-1)
+	if(ts=fclose(logtxt)==-1)
 	{
 		fprintf(stderr,"error: closed more than once\n");
+		THREAD_SUCCESS(ts);
+		return -1;
 	}
 	logtxt=NULL;
 	delete atms;
