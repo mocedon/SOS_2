@@ -407,13 +407,12 @@ int main(int argc, char *argv[])
 		fprintf(stderr,"error: could not run pthread_join\n");
 		THREAD_SUCCESS(ts);
 	}
-
-	if(ts=fclose(logtxt)==-1)
+	fclose(logtxt);
+	/*f(ts==-1)
 	{
 		fprintf(stderr,"error: closed more than once\n");
 		THREAD_SUCCESS(ts);
-	}
-	logtxt=NULL;
+	}*/
 	delete atms;
 	delete ATMInfoArr;
 	delete bank;
